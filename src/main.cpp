@@ -6,14 +6,10 @@
 
 using namespace std;
 
-// =========================
-// GLOBALS
-// =========================
+
 unsigned int VAO, VBO, shaderProgram;
 
-// =========================
-// DDA LINE ALGORITHM
-// =========================
+
 vector<float> DDA(float x1, float y1, float x2, float y2)
 {
     vector<float> points;
@@ -79,9 +75,7 @@ void setupShader()
     glDeleteShader(fragmentShader);
 }
 
-// =========================
-// BUFFER SETUP
-// =========================
+
 void setupBuffer()
 {
     glGenVertexArrays(1, &VAO);
@@ -94,9 +88,6 @@ void setupBuffer()
     glEnableVertexAttribArray(0);
 }
 
-// =========================
-// SIMPLE DRAW FUNCTION
-// =========================
 void drawShape(float vertices[], int size, GLenum mode)
 {
     glBindVertexArray(VAO);
@@ -112,9 +103,6 @@ void drawShape(float vertices[], int size, GLenum mode)
     glDrawArrays(mode, 0, size / (3 * sizeof(float)));
 }
 
-// =========================
-// MAIN
-// =========================
 int main()
 {
     if (!glfwInit())
@@ -150,12 +138,9 @@ int main()
     setupShader();
     setupBuffer();
 
-    // =========================
-    // SHAPES
-    // =========================
+    
 
-    // DDA Line: Convert pixel coordinates (100,100) to (250,400) to NDC
-    // Pixel to NDC: x = 2*(px/800)-1, y = 1-2*(py/600)
+   
     float x1_ndc = 2 * (100.0f / 800.0f) - 1.0f; // -0.75
     float y1_ndc = 1.0f - 2 * (100.0f / 600.0f); // 0.667
     float x2_ndc = 2 * (250.0f / 800.0f) - 1.0f; // -0.375
@@ -165,15 +150,12 @@ int main()
     float *ddaLine = ddaLinePoints.data();
     int ddaLineSize = ddaLinePoints.size() * sizeof(float);
 
-    // Triangle with vertices a(-0.2,-0.2), b(0.2,-0.2), c(0.0,0.2)
     float triangle[] = {
         -0.2f, -0.2f, 0.0f,
         0.2f, -0.2f, 0.0f,
         0.0f, 0.2f, 0.0f};
 
-    // =========================
-    // RENDER LOOP
-    // =========================
+   
 
     while (!glfwWindowShouldClose(window))
     {
