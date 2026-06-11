@@ -1,32 +1,66 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <vector>
+#include <cmath>
 
 using namespace std;
 
 // =========================
-// GLOBALS 
+// GLOBALS
 // =========================
 unsigned int VAO, VBO, shaderProgram;
 
+// =========================
+// DDA LINE ALGORITHM
+// =========================
+vector<float> DDA(float x1, float y1, float x2, float y2)
+{
+    vector<float> points;
+
+    float dx = x2 - x1;
+    float dy = y2 - y1;
+
+    int steps = max(abs(dx), abs(dy));
+
+    float xInc = dx / steps;
+    float yInc = dy / steps;
+
+    float x = x1;
+    float y = y1;
+
+    for (int i = 0; i <= steps; i++)
+    {
+        // Add the current point to the list
+        points.push_back(x);
+        points.push_back(y);
+        points.push_back(0.0f); // z
+
+        x += xInc;
+        y += yInc;
+    }
+
+    return points;
+}
+
 // Resize callback
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
 
 // =========================
-// SHADER SETUP 
+// SHADER SETUP
 // =========================
 void setupShader()
 {
-    const char* vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main(){ gl_Position = vec4(aPos, 1.0); }";
+    const char *vertexShaderSource = "#version 330 core\n"
+                                     "layout (location = 0) in vec3 aPos;\n"
+                                     "void main(){ gl_Position = vec4(aPos, 1.0); }";
 
-    const char* fragmentShaderSource = "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main(){ FragColor = vec4(0.2f, 0.8f, 0.3f, 1.0f); }";
+    const char *fragmentShaderSource = "#version 330 core\n"
+                                       "out vec4 FragColor;\n"
+                                       "void main(){ FragColor = vec4(0.2f, 0.8f, 0.3f, 1.0f); }";
 
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
@@ -46,7 +80,7 @@ void setupShader()
 }
 
 // =========================
-// BUFFER SETUP 
+// BUFFER SETUP
 // =========================
 void setupBuffer()
 {
@@ -56,7 +90,7 @@ void setupBuffer()
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 }
 
@@ -72,7 +106,7 @@ void drawShape(float vertices[], int size, GLenum mode)
 
     glUseProgram(shaderProgram);
 
-    if(mode == GL_POINTS)
+    if (mode == GL_POINTS)
         glPointSize(10.0f);
 
     glDrawArrays(mode, 0, size / (3 * sizeof(float)));
@@ -93,7 +127,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_CORE_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Shapes Demossss", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(800, 600, "Shapes Demossss", NULL, NULL);
     if (!window)
     {
         cout << "Failed to create window" << endl;
@@ -117,41 +151,25 @@ int main()
     setupBuffer();
 
     // =========================
-    // SHAPES 
+    // SHAPES
     // =========================
 
-   float point[] = {
-    -0.8f, 0.8f, 0.0f
-};
+    // DDA Line: Convert pixel coordinates (100,100) to (250,400) to NDC
+    // Pixel to NDC: x = 2*(px/800)-1, y = 1-2*(py/600)
+    float x1_ndc = 2 * (100.0f / 800.0f) - 1.0f; // -0.75
+    float y1_ndc = 1.0f - 2 * (100.0f / 600.0f); // 0.667
+    float x2_ndc = 2 * (250.0f / 800.0f) - 1.0f; // -0.375
+    float y2_ndc = 1.0f - 2 * (400.0f / 600.0f); // -0.333
 
-float line[] = {
-    -0.5f, 0.5f, 0.0f,
-    -0.2f, 0.5f, 0.0f
-};
+    vector<float> ddaLinePoints = DDA(x1_ndc, y1_ndc, x2_ndc, y2_ndc);
+    float *ddaLine = ddaLinePoints.data();
+    int ddaLineSize = ddaLinePoints.size() * sizeof(float);
 
-float triangle[] = {
-     0.0f,  0.5f, 0.0f,
-     0.3f,  0.5f, 0.0f,
-     0.15f, 0.8f, 0.0f
-};
-
-float rectangle[] = {
-    -0.8f, -0.2f, 0.0f,
-    -0.4f, -0.2f, 0.0f,
-    -0.4f, -0.6f, 0.0f,
-
-    -0.4f, -0.6f, 0.0f,
-    -0.8f, -0.6f, 0.0f,
-    -0.8f, -0.2f, 0.0f
-};
-
-float pentagon[] = {
-     0.4f,  0.2f, 0.0f,
-     0.2f, -0.1f, 0.0f,
-     0.3f, -0.5f, 0.0f,
-     0.6f, -0.5f, 0.0f,
-     0.7f, -0.1f, 0.0f
-};
+    // Triangle with vertices a(-0.2,-0.2), b(0.2,-0.2), c(0.0,0.2)
+    float triangle[] = {
+        -0.2f, -0.2f, 0.0f,
+        0.2f, -0.2f, 0.0f,
+        0.0f, 0.2f, 0.0f};
 
     // =========================
     // RENDER LOOP
@@ -162,13 +180,11 @@ float pentagon[] = {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // CHANGE THIS LINE DURING CLASS 🔥
+        // Draw DDA line
+        drawShape(ddaLine, ddaLineSize, GL_LINE_STRIP);
 
-      drawShape(point, sizeof(point), GL_POINTS);
-drawShape(line, sizeof(line), GL_LINES);
-drawShape(triangle, sizeof(triangle), GL_TRIANGLES);
-drawShape(rectangle, sizeof(rectangle), GL_TRIANGLES);
-// drawShape(pentagon, sizeof(pentagon), GL_TRIANGLE_FAN);
+        // Draw triangle
+        drawShape(triangle, sizeof(triangle), GL_TRIANGLES);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

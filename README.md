@@ -7,6 +7,8 @@ Sample source code:
 g++ -Iinclude src/main.cpp src/glad.c -Llib -lglfw3dll -lopengl32 -lgdi32 -o myProgram
 ./myProgram.exe
 
+g++ -Iinclude src/main.cpp src/glad.c -lglfw3 -lopengl32 -lgdi32 -o myProgram.exe
+
 ## To Check the compiler version
 
 g++ -dumpmachine
